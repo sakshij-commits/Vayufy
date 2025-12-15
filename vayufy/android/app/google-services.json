@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "31316772176",
+    "project_id": "vayufy-ece2d",
+    "storage_bucket": "vayufy-ece2d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:31316772176:android:904bdc4bc95845773b1855",
+        "android_client_info": {
+          "package_name": "com.example.vayufy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "31316772176-773ms70730etbhg0c8ngkdjvhn9mt5b4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.vayufy",
+            "certificate_hash": "d202139fe3e370fa85d1e964f25c3f92be7b3ff2"
+          }
+        },
+        {
+          "client_id": "31316772176-u3p1rpbcj8j8h0omonqkpi2noj2o3v4m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxFmZaWqvaGJ8ONZ4i-KtAFevs9EXxu-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "31316772176-u3p1rpbcj8j8h0omonqkpi2noj2o3v4m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "31316772176-a13qtmqqcgi0la5kmq7lu7ebv36jvps1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.vayufy"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
