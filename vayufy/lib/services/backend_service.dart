@@ -44,7 +44,7 @@ class BackendService {
     if (res.statusCode != 200) throw Exception('Delete failed');
   }
 
-  // ================= SEARCH =================
+  // ================= SEARCH ================= 
   Future<dynamic> addSearch(String uid, String query) async {
     final res = await http.post(
       Uri.parse('$baseUrl/api/search/add'),
@@ -88,13 +88,27 @@ class BackendService {
 
   // ================= BASIC PREFS =================
   Future<dynamic> setPrefs(String uid, Map<String, dynamic> prefs) async {
+    final payload = {
+      "userId": uid,
+      ...prefs,
+    };
+
+    print("📤 PREF SAVE PAYLOAD → $payload");
+
     final res = await http.post(
       Uri.parse('$baseUrl/api/prefs/set'),
       headers: _headers(),
-      body: jsonEncode({'userId': uid, ...prefs}),
+      body: jsonEncode(payload),
     );
-    if (res.statusCode == 200) return jsonDecode(res.body);
-    throw Exception('Error');
+
+    print("📥 PREF SAVE RESPONSE → ${res.statusCode}");
+    print("📥 PREF SAVE BODY → ${res.body}");
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+
+    throw Exception("Prefs save failed ${res.statusCode}");
   }
 
   Future<dynamic> getPrefs(String uid) async {
@@ -169,4 +183,52 @@ class BackendService {
     );
     return res.statusCode == 200;
   }
+
+  // SAVE CITY
+  Future<void> saveCity({
+    required String userId,
+    required String city,
+    required double lat,
+    required double lon,
+  }) async {
+    final url = Uri.parse("$baseUrl/api/locations");
+
+    print("📤 SAVE CITY REQUEST → $url");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "userId": userId,
+        "city": city,
+        "lat": lat,
+        "lon": lon,
+      }),
+    );
+
+    print("📥 SAVE CITY STATUS → ${response.statusCode}");
+    print("📥 SAVE CITY BODY → ${response.body}");
+
+    if (response.statusCode != 200) {
+      throw Exception("Save city failed: ${response.body}");
+    }
+  }
+
+
+  // GET SAVED CITY
+  Future<Map<String, dynamic>?> getSavedCity(String userId) async {
+    final res = await http.get(
+      Uri.parse("$baseUrl/api/locations/$userId"),
+    );
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      return data;
+    }
+
+    return null;
+  }
+
 }

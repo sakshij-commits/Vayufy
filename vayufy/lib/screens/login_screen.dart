@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,11 +23,12 @@ class _LoginScreenState extends State<LoginScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-
-      Navigator.pushReplacementNamed(context, '/route-check');
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Login failed")));
+      // ❌ DO NOTHING ELSE
+      // AppGate will handle navigation
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Login failed")),
+      );
     }
   }
 
@@ -39,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential =
           await FirebaseAuth.instance.signInWithProvider(googleProvider);
 
-      Navigator.pushReplacementNamed(context, '/main');
+      Navigator.pushReplacementNamed(context, '/select-city');
     } catch (e) {
       print("GOOGLE LOGIN ERROR: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -185,12 +188,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/signup');
-                },
-                child: const Text("New user? Create account"),
+              const SizedBox(height: 40),
+
+              Center(
+                child: RichText(
+                  text: TextSpan(
+                    text: "New user? ",
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: "Create account",
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            Navigator.pushNamed(context, '/signup');
+                          },
+                      ),
+                    ],
+                  ),
+                ),
               ),
+
 
 
             ],

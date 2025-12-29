@@ -10,6 +10,8 @@ import 'screens/signup_screen.dart';
 import 'screens/health_profile_screen.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'services/backend_service.dart';
+import 'screens/select_city_screen.dart';
+import 'screens/app_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,25 +36,18 @@ class VayufyApp extends StatelessWidget {
       ),
 
       // Firebase Auth Listener
-      home: StreamBuilder(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return LoginScreen();
-          }
-          return MainPage();
-        },
-      ),
+      home: const AppGate(),
 
 
       routes: {
-        '/main': (context) => MainPage(),
+        '/main': (context) => const MainPage(),
         '/home': (context) => HomeScreen(),
         '/history': (context) => HistoryScreen(),
         '/profile': (context) => ProfileScreen(),
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignupScreen(),
         '/health': (context) => const HealthProfileScreen(),
+        '/select-city': (context) => const SelectCityScreen(),
       },
     );
   }
@@ -74,25 +69,30 @@ class _MainPageState extends State<MainPage> {
     ProfileScreen(),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkProfile();
-    });
-  }
-
   Future<void> _checkProfile() async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final backend = BackendService(baseUrl: "http://10.0.2.2:5000");
 
-    final prefs = await backend.getPrefs(uid);
+    try {
+      final prefs = await backend.getPrefs(uid);
 
-    if (prefs == null || prefs["profileCompleted"] != true) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => HealthProfileScreen()),
-      );
+      // 1️⃣ Health profile not done
+      if (prefs == null || prefs["profileCompleted"] != true) {
+        Navigator.pushReplacementNamed(context, '/health');
+        return;
+      }
+
+      // 2️⃣ City not selected
+      if (prefs["citySelected"] != true) {
+        Navigator.pushReplacementNamed(context, '/select-city');
+        return;
+      }
+
+      // 3️⃣ Everything done → stay on MainPage
+      print("✅ Onboarding complete");
+
+    } catch (e) {
+      print("❌ Onboarding check failed: $e");
     }
   }
 
@@ -110,15 +110,13 @@ class _MainPageState extends State<MainPage> {
         animationDuration: const Duration(milliseconds: 300),
 
         items: const [
-          Icon(Icons.home_filled, size: 28, color: Colors.black),
-          Icon(Icons.show_chart, size: 28, color: Colors.black),
-          Icon(Icons.person, size: 28, color: Colors.black),
+          Icon(Icons.home_filled, size: 28),
+          Icon(Icons.show_chart, size: 28),
+          Icon(Icons.person, size: 28),
         ],
 
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         },
       ),
     );

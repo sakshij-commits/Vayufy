@@ -12,24 +12,27 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final backend = BackendService(baseUrl: "http://10.0.2.2:5000");
-
   final user = FirebaseAuth.instance.currentUser!;
+
   bool loading = true;
 
   Map<String, dynamic>? profile;
+  Map<String, dynamic>? savedCity; // 👈 for location
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadData() async {
     try {
-      final data = await backend.getHealthProfile(user.uid);
-      profile = data;
+      profile = await backend.getHealthProfile(user.uid);
+      savedCity = await backend.getSavedCity(user.uid);
+
     } catch (e) {
       profile = null;
+      savedCity = null;
     } finally {
       setState(() => loading = false);
     }
@@ -72,9 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _card(
               title: "Health Profile",
               children: profile == null
-                  ? [
-                      const Text("No health profile found"),
-                    ]
+                  ? [const Text("No health profile found")]
                   : [
                       _row("Age Group", profile!["ageGroup"]),
                       _row("Skin Type", profile!["skinType"]),
@@ -92,6 +93,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 16),
 
+            // 📍 SAVED LOCATION CARD
+            _card(
+              title: "Saved Location",
+              children: savedCity == null
+                  ? [
+                      _row("City", "Not selected"),
+                      _row("Coordinates", "--"),
+                    ]
+                  : [
+                      _row("City", savedCity!["city"]),
+                      _row(
+                        "Coordinates",
+                        "${savedCity!["lat"]}, ${savedCity!["lon"]}",
+                      ),
+                    ],
+            ),
+
+            const SizedBox(height: 16),
+
             // ✏️ EDIT PROFILE
             GestureDetector(
               onTap: () async {
@@ -101,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     builder: (_) => const HealthProfileScreen(),
                   ),
                 );
-                _loadProfile(); // refresh after edit
+                _loadData(); // refresh after edit
               },
               child: _actionButton("Edit Health Profile"),
             ),
@@ -132,12 +152,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54)),
-          Text(value,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -160,9 +185,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -182,9 +211,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Text(
           text,
           style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600),
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

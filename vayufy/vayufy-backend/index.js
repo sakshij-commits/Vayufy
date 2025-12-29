@@ -9,7 +9,7 @@ import preferenceRoutes from "./routes/preferences.js";
 import deviceRoutes from "./routes/devices.js";
 import "./firebase.js";
 import healthProfileRoutes from "./routes/healthProfile.js";
-
+import locationRoutes from "./routes/locations.js";
 
 dotenv.config();
 
@@ -25,12 +25,15 @@ app.use((req, res, next) => {
   next();
 });
 
+console.log("🔥 INDEX.JS LOADED");
+
 // ROUTES
 app.use("/api/search", searchRoutes);
 app.use("/api/aqi", aqiLogRoutes);
-app.use("/api/prefs", preferenceRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/health", healthProfileRoutes);
+app.use("/api/prefs", preferenceRoutes);
+app.use("/api/locations", locationRoutes);
 
 // ROOT TEST
 app.get("/", (req, res) => {

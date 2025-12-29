@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/backend_service.dart';
+import 'package:vayufy/main.dart';
 
 class HealthProfileScreen extends StatefulWidget {
   const HealthProfileScreen({super.key});
@@ -112,39 +113,29 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
     if (saving) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("❌ USER NOT LOGGED IN");
-      return;
-    }
+    if (user == null) return;
 
     setState(() => saving = true);
 
     try {
-      print("📤 SAVING HEALTH PROFILE...");
-
       await backend.setHealthProfile(user.uid, {
         "ageGroup": ageGroup,
         "skinType": skinType,
         "conditions": conditions,
         "airSensitivity": sensitivity,
         "alertThreshold": alertThreshold,
+        "profileCompleted": true,
       });
-
-      print("✅ PROFILE SAVED SUCCESSFULLY");
 
       if (!mounted) return;
 
-      // ✅ GO BACK TO MAIN PAGE SAFELY
       Navigator.pushNamedAndRemoveUntil(
         context,
-        '/main',
+        '/',
         (route) => false,
       );
 
-
     } catch (e) {
-      print("❌ SAVE PROFILE ERROR: $e");
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to save profile")),
       );
@@ -152,6 +143,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
       if (mounted) setState(() => saving = false);
     }
   }
+
 
 
   // ================= UI =================

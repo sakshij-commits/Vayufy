@@ -14,10 +14,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ---------------- DEFAULT LOCATION ----------------
-  String city = "Pune, India";
-  double lat = 18.5204;
-  double lon = 73.8567;
+  // ---------------- LOCATION (FROM BACKEND) ----------------
+  String? city;
+  double? lat;
+  double? lon;
 
   final AQIService service =
       AQIService("028455080c07238383047d76937dfa2c");
@@ -39,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    // 🔒 prevents double fetch during rebuild
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _bootstrap();
     });
@@ -57,10 +55,37 @@ class _HomeScreenState extends State<HomeScreen> {
       baseUrl: "http://10.0.2.2:5000",
     );
 
-    print("🧠 Firebase UID = $uid");
+    if (uid == null) return;
 
     await _initNotifications();
-    await fetchAQI();
+    await _loadSavedCityAndAQI();
+  }
+
+  // ---------------- LOAD CITY FROM BACKEND ----------------
+  Future<void> _loadSavedCityAndAQI() async {
+    try {
+      final savedCity = await backend.getSavedCity(uid!);
+
+      if (savedCity == null) {
+        print("❌ No saved city found");
+        if (mounted) {
+          setState(() => loading = false);
+        }
+        return;
+      }
+
+
+      city = savedCity["city"];
+      lat = savedCity["lat"];
+      lon = savedCity["lon"];
+
+      print("📍 Loaded city → $city ($lat,$lon)");
+
+      await fetchAQI();
+    } catch (e) {
+      print("❌ Failed to load city: $e");
+      setState(() => loading = false);
+    }
   }
 
   // ---------------- NOTIFICATIONS ----------------
@@ -78,17 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ================= FETCH AQI =================
   Future<void> fetchAQI() async {
-    if (_fetching) {
-      print("⏸️ fetchAQI skipped");
-      return;
-    }
+    if (_fetching || lat == null || lon == null) return;
 
     _fetching = true;
     print("📡 fetchAQI → $city ($lat,$lon)");
 
     try {
-      final data = await service.getAQI(lat, lon);
-      print("✅ AQI API RESPONSE: $data");
+      final data = await service.getAQI(lat!, lon!);
 
       if (!mounted) return;
 
@@ -100,76 +121,26 @@ class _HomeScreenState extends State<HomeScreen> {
         loading = false;
       });
 
-      print("🎯 AQI UPDATED → $aqi");
+      // 🔹 Save AQI log
+      backend.addAQILog(uid!, {
+        "city": city,
+        "lat": lat,
+        "lon": lon,
+        "aqi": aqi,
+        "pm10": pm10,
+        "pm25": pm25,
+        "co": pollutants!["co"],
+        "no2": pollutants!["no2"],
+        "so2": pollutants!["so2"],
+        "o3": pollutants!["o3"],
+        "timestamp": DateTime.now().toIso8601String(),
+      });
 
-      // 🔹 Save AQI log (non-blocking)
-      if (uid != null) {
-        backend.addAQILog(uid!, {
-          "city": city,
-          "lat": lat,
-          "lon": lon,
-          "aqi": aqi,
-          "pm10": pm10,
-          "pm25": pm25,
-          "co": pollutants!["co"],
-          "no2": pollutants!["no2"],
-          "so2": pollutants!["so2"],
-          "o3": pollutants!["o3"],
-          "timestamp": DateTime.now().toIso8601String(),
-        }).then((_) {
-          print("💾 AQI log saved");
-        }).catchError((e) {
-          print("⚠️ AQI log failed: $e");
-        });
-      }
-
-    } catch (e, s) {
+    } catch (e) {
       print("❌ AQI ERROR: $e");
-      print(s);
       if (mounted) setState(() => loading = false);
     } finally {
       _fetching = false;
-      print("🏁 fetchAQI END");
-    }
-  }
-
-  // ================= SEARCH =================
-  Future<void> searchCity(String name) async {
-    print("🔍 SEARCH → '$name'");
-
-    if (name.trim().isEmpty || uid == null) return;
-
-    setState(() => loading = true);
-
-    try {
-      final result = await geo.searchCity(name);
-
-      final newLat = result["lat"];
-      final newLon = result["lon"];
-      final newCity = "${result['name']}, ${result['country']}";
-
-      setState(() {
-        lat = newLat;
-        lon = newLon;
-        city = newCity;
-      });
-
-      print("📍 Location updated → $city");
-
-      // fire & forget
-      backend.addSearch(uid!, name);
-      backend.setPrefs(uid!, {
-        "preferredCity": newCity,
-        "lat": newLat,
-        "lon": newLon,
-      });
-
-      await fetchAQI();
-
-    } catch (e, s) {
-      print("❌ SEARCH ERROR: $e");
-      print(s);
-      if (mounted) setState(() => loading = false);
     }
   }
 
@@ -220,11 +191,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
-                        onSubmitted: searchCity,
+                        enabled: false, // 🔒 city fixed to saved location
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          prefixIcon: Icon(Icons.search, size: 20),
-                          hintText: "Search any location",
+                          prefixIcon: Icon(Icons.location_on, size: 20),
+                          hintText: "Saved location",
                         ),
                       ),
                     ),
@@ -234,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 20),
 
-              Text(city,
+              Text(city ?? "",
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold)),
 
