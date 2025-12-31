@@ -237,7 +237,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           Container(width: 10, height: 10, decoration: BoxDecoration(color: Colors.purpleAccent, shape: BoxShape.circle)),
           SizedBox(width: 6),
-          Text("Pune", style: TextStyle(fontFamily: 'Poppins')),
+          Text("Data", style: TextStyle(fontFamily: 'Poppins')),
         ],
       ),
     );
@@ -348,7 +348,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Text("Lung Age Impact",
               style: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.bold)),
           SizedBox(height: 4),
-          Text("Based on today's PM2.5 exposure",
+          Text("Based on PM2.5 exposures",
               style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.black54)),
           SizedBox(height: 14),
 
@@ -359,11 +359,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Your lungs aged by",
+                    Text("On average, Your lungs age by",
                         style: TextStyle(fontFamily: 'Poppins', fontSize: 16)),
                     SizedBox(height: 4),
                     Text(
-                      "${daily.toStringAsFixed(1)} days today",
+                      "${daily.toStringAsFixed(1)} days",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 32,
