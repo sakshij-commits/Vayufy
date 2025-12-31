@@ -34,11 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool loading = true;
   bool _fetching = false;
+  
+  final TextEditingController _searchCtrl = TextEditingController();
+  bool _usingSearchCity = false; // 🔑
+
 
   // ---------------- INIT ----------------
   @override
   void initState() {
     super.initState();
+    _usingSearchCity = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _bootstrap();
     });
@@ -63,30 +68,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ---------------- LOAD CITY FROM BACKEND ----------------
   Future<void> _loadSavedCityAndAQI() async {
-    try {
-      final savedCity = await backend.getSavedCity(uid!);
-
-      if (savedCity == null) {
-        print("❌ No saved city found");
-        if (mounted) {
-          setState(() => loading = false);
-        }
-        return;
-      }
-
-
-      city = savedCity["city"];
-      lat = savedCity["lat"];
-      lon = savedCity["lon"];
-
-      print("📍 Loaded city → $city ($lat,$lon)");
-
-      await fetchAQI();
-    } catch (e) {
-      print("❌ Failed to load city: $e");
-      setState(() => loading = false);
-    }
+  if (_usingSearchCity) {
+    print("🔁 Skipping saved city load (search active)");
+    return;
   }
+
+  try {
+    final savedCity = await backend.getSavedCity(uid!);
+
+    if (savedCity == null) {
+      print("❌ No saved city found");
+      if (mounted) {
+        setState(() => loading = false);
+      }
+      return;
+    }
+
+    city = savedCity["city"];
+    lat = savedCity["lat"];
+    lon = savedCity["lon"];
+
+    print("📍 Loaded city → $city ($lat,$lon)");
+
+    await fetchAQI();
+  } catch (e) {
+    print("❌ Failed to load city: $e");
+    setState(() => loading = false);
+  }
+}
+
 
   // ---------------- NOTIFICATIONS ----------------
   Future<void> _initNotifications() async {
@@ -144,6 +154,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+//--search
+  Future<void> _onSearchSubmit(String query) async {
+    if (query.trim().isEmpty) return;
+
+    print("🔍 Searching city → $query");
+
+    try {
+      setState(() {
+        loading = true;
+        _usingSearchCity = true; // 🔑 stops saved city overwrite
+      });
+
+      final result = await geo.searchCity(query);
+      
+      city = result["city"] 
+        ?? result["name"] 
+        ?? result["display_name"];
+
+      lat = result["lat"];
+      lon = result["lon"];
+
+      print("📍 Search city → $city ($lat,$lon)");
+
+      await fetchAQI();
+
+    } catch (e) {
+      print("❌ Search failed: $e");
+      setState(() => loading = false);
+    }
+  }
+
+
   // ================= CATEGORY =================
   String getCategory(int aqi) {
     if (aqi <= 50) return "Good";
@@ -191,11 +234,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
-                        enabled: false, // 🔒 city fixed to saved location
+                        controller: _searchCtrl,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: _onSearchSubmit,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          prefixIcon: Icon(Icons.location_on, size: 20),
-                          hintText: "Saved location",
+                          prefixIcon: Icon(Icons.search, size: 20),
+                          hintText: "Search any city",
                         ),
                       ),
                     ),
@@ -378,4 +423,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
 }
